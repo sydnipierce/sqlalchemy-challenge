@@ -23,8 +23,6 @@ Base.prepare(engine, reflect=True)
 Measurement = Base.classes.measurement
 Station = Base.classes.station
 
-session = Session(engine)
-
 #################################################
 # Flask Setup
 #################################################
@@ -49,6 +47,8 @@ def home():
 
 @app.route("/api/v1.0/precipitation")
 def precip():
+    session = Session(engine)
+    
     raw_data = session.query(Measurement.date, Measurement.prcp).all()
 
     result_list = []
@@ -58,10 +58,14 @@ def precip():
         result_dict[row.date] = row.prcp
         result_list.append(result_dict)
 
+    session.close()
+    
     return(jsonify(result_list))
 
 @app.route("/api/v1.0/stations")
 def stations():
+    session = Session(engine)
+    
     raw_data = session.query(Station).all()
 
     result_list = []
@@ -73,10 +77,14 @@ def stations():
         result_dict["name"] = row.name
         result_list.append(result_dict)
 
+    session.close()
+
     return(jsonify(result_list))
 
 @app.route("/api/v1.0/tobs")
 def temps():
+    session = Session(engine)
+    
     dates_ordered = session.query(Measurement.date).\
         order_by(Measurement.date.desc()).first()
 
@@ -103,6 +111,8 @@ def temps():
         result_dict["tobs"] = row.tobs
         result_list.append(result_dict)
 
+    session.close()
+    
     return(jsonify(result_list))
 
 if __name__ == '__main__':
