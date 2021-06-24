@@ -115,5 +115,29 @@ def temps():
     
     return(jsonify(result_list))
 
+@app.route("/api/v1.0/<start>/<end>")
+def var_temps():
+    if end != None:
+        raw_data = session.query(Measurement.date, func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs))\
+            .filter(Measurement.date >= start)\
+            .filter(Measurement.date <= end).all()
+    else:
+        raw_data = session.query(Measurement.date, func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs))\
+            .filter(Measurement.date >= start).all()
+
+    result_list = []
+
+    for row in raw_data:
+        result_dict = {}
+        result_dict["date"] = row.date
+        result_dict["TMIN"] = row[1]
+        result_dict["TMAX"] = row[2]
+        result_dict["TAVG"] = row[3]
+        result_list.append(result_dict)
+
+    session.close()
+    
+    return(jsonify(result_list))
+
 if __name__ == '__main__':
     app.run(debug=True)
