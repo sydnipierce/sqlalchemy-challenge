@@ -22,6 +22,8 @@ Base.prepare(engine, reflect=True)
 Measurement = Base.classes.measurement
 Station = Base.classes.station
 
+session = Session(engine)
+
 #################################################
 # Flask Setup
 #################################################
@@ -46,7 +48,32 @@ def home():
 
 @app.route("/api/v1.0/precipitation")
 def precip():
-    
+    raw_data = session.query(Measurement.date, Measurement.prcp).all()
+
+    result_list = []
+
+    for row in raw_data:
+        result_dict = {}
+        result_dict["date"] = row.date
+        result_dict["prcp"] = row.prcp
+        result_list.append(result_dict)
+
+    return(jsonify(result_list))
+
+@app.route("/api/v1.0/stations")
+def stations():
+    raw_data = session.query(Station).all()
+
+    result_list = []
+
+    for row in raw_data:
+        result_dict = {}
+        result_dict["id"] = row.id
+        result_dict["station"] = row.station
+        result_dict["name"] = row.name
+        result_list.append(result_dict)
+
+    return(jsonify(result_list))
 
 if __name__ == '__main__':
     app.run(debug=True)
