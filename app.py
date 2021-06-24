@@ -41,16 +41,18 @@ def home():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start><br/>"
-        f"/api/v1.0/<start>/<end>"
+        f"/api/v1.0/start<br/>"
+        f"/api/v1.0/start/end"
     )
 
 @app.route("/api/v1.0/precipitation")
 def precip():
     session = Session(engine)
     
+    # Pull precipitation data
     raw_data = session.query(Measurement.date, Measurement.prcp).all()
 
+    # Transform into JSON
     result_list = []
 
     for row in raw_data:
@@ -60,14 +62,17 @@ def precip():
 
     session.close()
     
+    # Return JSON
     return(jsonify(result_list))
 
 @app.route("/api/v1.0/stations")
 def stations():
     session = Session(engine)
     
+    # Pull station data
     raw_data = session.query(Station).all()
 
+    # Transform into JSON
     result_list = []
 
     for row in raw_data:
@@ -79,30 +84,37 @@ def stations():
 
     session.close()
 
+    # Return JSON
     return(jsonify(result_list))
 
 @app.route("/api/v1.0/tobs")
 def temps():
     session = Session(engine)
     
+    # Pull dates and order descending to ID the most recent date
     dates_ordered = session.query(Measurement.date).\
         order_by(Measurement.date.desc()).first()
 
     last_date = str(dates_ordered[0])
+
+    # Convert latest date to dt format, calculate year ago date
     last_date_dt = dt.datetime.strptime(last_date, "%Y-%m-%d")
     year_ago = last_date_dt - dt.timedelta(days=365)
     
+    # Pull station count data and order descending to determine most active station
     station_use = session.query(Measurement.station, func.count(Measurement.station)).\
         group_by(Measurement.station).\
         order_by(func.count(Measurement.station).desc()).all()
 
     most_active = station_use[0][0]
 
+    # Pull temperature data for the past year for the most active station
     data_last_year = session.query(Measurement.date, Measurement.tobs).\
         filter(Measurement.station == most_active).\
         filter(Measurement.date > year_ago).\
         filter(Measurement.date <= last_date_dt).all()
 
+    # Transform into JSON
     result_list = []
 
     for row in data_last_year:
@@ -113,6 +125,7 @@ def temps():
 
     session.close()
     
+    # Return JSON
     return(jsonify(result_list))
 
 @app.route("/api/v1.0/<start>")
@@ -120,6 +133,7 @@ def temps():
 def var_temps(start, end=None):
     session = Session(engine)
     
+    # Define summary stats date ranges according to whether end date is provided
     if end != None:
         raw_data = session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs))\
             .filter(Measurement.date >= start)\
@@ -128,6 +142,7 @@ def var_temps(start, end=None):
         raw_data = session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs))\
             .filter(Measurement.date >= start).all()
 
+    # Transform into JSON
     result_list = []
 
     for row in raw_data:
@@ -139,7 +154,9 @@ def var_temps(start, end=None):
 
     session.close()
     
+    # Return JSON
     return(jsonify(result_list))
 
+# Run app if main script
 if __name__ == '__main__':
     app.run(debug=True)
