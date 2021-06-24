@@ -115,8 +115,9 @@ def temps():
     
     return(jsonify(result_list))
 
+@app.route("/api/v1.0/<start>")
 @app.route("/api/v1.0/<start>/<end>")
-def var_temps(start, end):
+def var_temps(start, end=None):
     session = Session(engine)
     
     if end != None:
